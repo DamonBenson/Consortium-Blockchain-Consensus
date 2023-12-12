@@ -12,6 +12,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import p2p.NetworkInfo;
 import p2p.P2PInitialization;
+import pbft.message.CommitMsg;
+import pbft.message.PrePrepareMsg;
+import pbft.message.PrepareMsg;
 import pojo.ChannelInfo;
 import pojo.Node;
 import pojo.msg.ConnMsg;
@@ -20,6 +23,8 @@ import pojo.msg.ReqMsg;
 import utils.CryptoUtils;
 import pojo.msg.MsgType;
 import utils.LocalUtils;
+import xxxbft.msg.*;
+import xxxbft.status.XBvalSet;
 
 import javax.crypto.SecretKey;
 import javax.crypto.interfaces.DHPrivateKey;
@@ -48,9 +53,9 @@ public class P2PServerProcessor {
     }
 
     public static P2PServerProcessor getInstance() {
-        if(processor == null) {
+        if (processor == null) {
             synchronized (P2PServerProcessor.class) {
-                if(processor == null) {
+                if (processor == null) {
                     processor = new P2PServerProcessor();
                     return processor;
                 }
@@ -62,11 +67,13 @@ public class P2PServerProcessor {
 
     /**
      * 请求路由
-     * @param ctx channel连接的上下文对象
+     *
+     * @param ctx     channel连接的上下文对象
      * @param msgType 收到的消息类型
-     * @param json json化的消息内容
+     * @param json    json化的消息内容
      */
     public void route(ChannelHandlerContext ctx, MsgType msgType, String json) {
+        byte index;
         switch (msgType) {
             case CONN:
                 ConnMsg connMsg = gson.fromJson(json, ConnMsg.class);
@@ -78,23 +85,81 @@ public class P2PServerProcessor {
                 break;
             case VAL:
                 ValMsg valMsg = gson.fromJson(json, ValMsg.class);
-                val(ctx, valMsg);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][VAL]: %s", index, node.getIndex(), valMsg));
+                honeybadger.protocol.MsgProcessor.val(valMsg, index);
                 break;
             case ECHO:
                 EchoMsg echoMsg = gson.fromJson(json, EchoMsg.class);
-                echo(ctx, echoMsg);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][ECHO]: %s", index, node.getIndex(), echoMsg));
+                honeybadger.protocol.MsgProcessor.echo(echoMsg, index);
                 break;
             case READY:
                 ReadyMsg readyMsg = gson.fromJson(json, ReadyMsg.class);
-                ready(ctx, readyMsg);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][READY]: %s", index, node.getIndex(), readyMsg));
+                honeybadger.protocol.MsgProcessor.ready(readyMsg, index);
                 break;
             case BVAL:
                 BvalMsg bvalMsg = gson.fromJson(json, BvalMsg.class);
-                bval(ctx, bvalMsg);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][BVAL]: %s", index, node.getIndex(), bvalMsg));
+                honeybadger.protocol.MsgProcessor.bval(bvalMsg, index);
                 break;
             case AUX:
                 AuxMsg auxMsg = gson.fromJson(json, AuxMsg.class);
-                aux(ctx, auxMsg);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][AUX]: %s", index, node.getIndex(), auxMsg));
+                honeybadger.protocol.MsgProcessor.aux(auxMsg, index);
+                break;
+            case X_PREPARE:
+                XPrepareMsg xPrepareMsg = gson.fromJson(json, XPrepareMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][X_PREPARE]: %s", index, node.getIndex(), xPrepareMsg));
+                xxxbft.protocol.MsgProcessor.prepare(xPrepareMsg, index);
+                break;
+            case X_PREPARE_VOTE:
+                XPrepareVoteMsg xPrepareVoteMsg = gson.fromJson(json, XPrepareVoteMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][X_PREPARE_VOTE]: %s", index, node.getIndex(), xPrepareVoteMsg));
+                xxxbft.protocol.MsgProcessor.prepareVote(xPrepareVoteMsg, index);
+                break;
+            case X_COMMIT:
+                XCommitMsg xCommitMsg = gson.fromJson(json, XCommitMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][X_COMMIT]: %s", index, node.getIndex(), xCommitMsg));
+                xxxbft.protocol.MsgProcessor.commit(xCommitMsg, index);
+                break;
+            case X_BVAL:
+                XBvalMsg xBvalMsg = gson.fromJson(json, XBvalMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][X_BVAL]: %s", index, node.getIndex(), xBvalMsg));
+                xxxbft.protocol.MsgProcessor.bval(xBvalMsg, index);
+                break;
+            case X_AUX:
+                XAuxMsg xAuxMsg = gson.fromJson(json, XAuxMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][X_AUX]: %s", index, node.getIndex(), xAuxMsg));
+                xxxbft.protocol.MsgProcessor.aux(xAuxMsg, index);
+                break;
+            case PRE_PREPARE:
+                PrePrepareMsg prePrepareMsg = gson.fromJson(json, PrePrepareMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][PRE_PREPARE]: %s", index, node.getIndex(), prePrepareMsg));
+                pbft.protocol.MsgProcessor.prePrepare(prePrepareMsg);
+                break;
+            case PREPARE:
+                PrepareMsg prepareMsg = gson.fromJson(json, PrepareMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][PREPARE]: %s", index, node.getIndex(), prepareMsg));
+                pbft.protocol.MsgProcessor.prepare(prepareMsg, index);
+                break;
+            case COMMIT:
+                CommitMsg commitMsg = gson.fromJson(json, CommitMsg.class);
+                index = ctx.channel().attr(channelInfoKey).get().getIndex();
+                log.info(String.format("[%s->%s][RECEIVE][COMMIT]: %s", index, node.getIndex(), commitMsg));
+                pbft.protocol.MsgProcessor.commit(commitMsg, index);
                 break;
             default:
                 break;
@@ -105,12 +170,13 @@ public class P2PServerProcessor {
      * 1.生成临时公私钥，完成自己的密钥协商，生成用于该channel通信的对称加密密钥
      * 2.将自己的临时公钥发送给peer，以便peer完成密钥协商
      * 3.将自己的永久公钥发送给peer，用于该channel的签名/验签
-     * @param ctx channel连接的上下文对象
+     *
+     * @param ctx     channel连接的上下文对象
      * @param connMsg 收到的CONN消息，包含peer临时公钥、永久公钥
      */
     public void conn(ChannelHandlerContext ctx, ConnMsg connMsg) {
 
-        log.info(String.format("[%s->%s][RECEIVE][CONN]: %s", connMsg.getIndex(),node.getIndex(), connMsg));
+        log.info(String.format("[%s->%s][RECEIVE][CONN]: %s", connMsg.getIndex(), node.getIndex(), connMsg));
 
         // 根据peer的临时公钥和自己的临时私钥，生成对称密钥
         byte[] byteTempPublicKey = LocalUtils.hex2Bytes(connMsg.getTempPublicKey());
@@ -160,7 +226,8 @@ public class P2PServerProcessor {
 
     /**
      * REQ请求路由（不同共识算法对REQ请求的处理可能不同）
-     * @param ctx channel连接的上下文对象
+     *
+     * @param ctx    channel连接的上下文对象
      * @param reqMsg 收到的REQ消息，包含请求序号、具体内容
      */
     public void req(ChannelHandlerContext ctx, ReqMsg reqMsg) {
@@ -169,90 +236,11 @@ public class P2PServerProcessor {
             case "HoneyBadger":
                 honeybadger.protocol.MsgProcessor.req(reqMsg);
                 break;
-            default:
+            case "XXXBFT":
+                xxxbft.protocol.MsgProcessor.req(reqMsg);
                 break;
-        }
-    }
-
-    /**
-     * VAL请求路由
-     * @param ctx channel连接的上下文对象
-     * @param valMsg 收到的VAL消息，包含消息序号、proposal、merkle root、merkle proof
-     */
-    public void val(ChannelHandlerContext ctx, ValMsg valMsg) {
-        byte index = ctx.channel().attr(channelInfoKey).get().getIndex();
-        log.info(String.format("[%s->%s][RECEIVE][VAL]: %s", index, node.getIndex(), valMsg));
-        switch (node.getConsensusAlgorithm()) {
-            case "HoneyBadger":
-                honeybadger.protocol.MsgProcessor.val(valMsg, index);
-                break;
-            default:
-                break;
-        }
-    }
-
-    /**
-     * ECHO请求路由
-     * @param ctx channel连接的上下文对象
-     * @param echoMsg 收到的ECHO消息，包含消息序号、proposal、merkle root、merkle proof
-     */
-    public void echo(ChannelHandlerContext ctx, EchoMsg echoMsg) {
-        byte index = ctx.channel().attr(channelInfoKey).get().getIndex();
-        log.info(String.format("[%s->%s][RECEIVE][ECHO]: %s", index, node.getIndex(), echoMsg));
-        switch (node.getConsensusAlgorithm()) {
-            case "HoneyBadger":
-                honeybadger.protocol.MsgProcessor.echo(echoMsg, index);
-                break;
-            default:
-                break;
-        }
-    }
-
-    /**
-     * READY请求路由
-     * @param ctx channel连接的上下文对象
-     * @param readyMsg 收到的READY消息，包含消息序号、merkle root
-     */
-    public void ready(ChannelHandlerContext ctx, ReadyMsg readyMsg) {
-        byte index = ctx.channel().attr(channelInfoKey).get().getIndex();
-        log.info(String.format("[%s->%s][RECEIVE][READY]: %s", index, node.getIndex(), readyMsg));
-        switch (node.getConsensusAlgorithm()) {
-            case "HoneyBadger":
-                honeybadger.protocol.MsgProcessor.ready(readyMsg, index);
-                break;
-            default:
-                break;
-        }
-    }
-
-    /**
-     * BVAL请求路由
-     * @param ctx channel连接的上下文对象
-     * @param bvalMsg 收到的BVAL消息，包含消息序号、proposal节点、BA轮次、是否同意
-     */
-    public void bval(ChannelHandlerContext ctx, BvalMsg bvalMsg) {
-        byte index = ctx.channel().attr(channelInfoKey).get().getIndex();
-        log.info(String.format("[%s->%s][RECEIVE][BVAL]: %s", index, node.getIndex(), bvalMsg));
-        switch (node.getConsensusAlgorithm()) {
-            case "HoneyBadger":
-                honeybadger.protocol.MsgProcessor.bval(bvalMsg, index);
-                break;
-            default:
-                break;
-        }
-    }
-
-    /**
-     * AUX请求路由
-     * @param ctx channel连接的上下文对象
-     * @param auxMsg 收到的AUX消息，包含消息序号、proposal节点、BA轮次、是否同意
-     */
-    public void aux(ChannelHandlerContext ctx, AuxMsg auxMsg) {
-        byte index = ctx.channel().attr(channelInfoKey).get().getIndex();
-        log.info(String.format("[%s->%s][RECEIVE][AUX]: %s", index, node.getIndex(), auxMsg));
-        switch (node.getConsensusAlgorithm()) {
-            case "HoneyBadger":
-                honeybadger.protocol.MsgProcessor.aux(auxMsg, index);
+            case "PBFT":
+                pbft.protocol.MsgProcessor.req(reqMsg);
                 break;
             default:
                 break;

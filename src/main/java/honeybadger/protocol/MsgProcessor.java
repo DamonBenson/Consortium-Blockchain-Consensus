@@ -15,6 +15,7 @@ import utils.ErasureCodeUtils;
 import utils.LocalUtils;
 import utils.MerkleTree;
 import utils.SendUtils;
+import xxxbft.status.XReqSet;
 
 import static honeybadger.status.StatusSetUtils.isInOutputs;
 
@@ -349,5 +350,111 @@ public class MsgProcessor {
         }
 
     }
+
+    // // TODO: 暂时从这里回到xxxbft
+    // synchronized public static void finishRound(int seq, byte src, byte round) {
+    //
+    //     Byte binValue = ConsensusStatus.binValues.get(seq).get(src).get(round);
+    //
+    //     // TODO: 公共随机硬币算法
+    //     boolean coin = (round % 2) == 1;
+    //
+    //     if (StatusSetUtils.isInOutputs(seq, src) && ConsensusStatus.outputs.get(seq).get(src) == coin) {
+    //         return;
+    //     }
+    //
+    //     switch (binValue) {
+    //
+    //         // bin_values中没有元素（正常情况下不会走到这里，因为已经被StatusSetUtils.isEnoughAux过滤掉）
+    //         case 0:
+    //             return;
+    //
+    //         // bin_values中只有0
+    //         case 1:
+    //             // 如果公共硬币也是0，那么可以output
+    //             if (!coin && !StatusSetUtils.isInOutputs(seq, src)) {
+    //                 log.info(String.format("[OUTPUT]: seq=%s, src=%s, est=false", seq, src));
+    //                 StatusSetUtils.addOutputs(seq, src, false);
+    //                 // 如果一轮Honey Badger共识中，所有节点提议对应的BA共识都完成，则可以进入下一轮Honey Badger共识
+    //                 if (ConsensusStatus.outputs.get(seq).size() == NetworkInfo.getN()) {
+    //                     MsgGC.afterFinishSeq();
+    //                     xxxbft.protocol.MsgGC.afterFinishRound();
+    //                     if (XReqSet.getCurrReq() != null) {
+    //                         xxxbft.protocol.MsgProcessor.req(XReqSet.getCurrReq());
+    //                     }
+    //                 }
+    //             }
+    //             // 不管公共硬币是几，都进行下一轮BA共识，est保持0不变
+    //             if(!StatusSetUtils.isSendBvals0(seq, src, (byte) (round + 1))) {
+    //                 BvalMsg bvalMsg = new BvalMsg(seq, src, (byte) (round + 1), false);
+    //                 MsgGC.afterSendBval0(bvalMsg);
+    //                 String json = gson.toJson(bvalMsg);
+    //                 RawMsg rawMsg = new RawMsg(MsgType.BVAL, json, null);
+    //                 SendUtils.publishToServer(rawMsg);
+    //             }
+    //             return;
+    //
+    //         // bin_values中只有1，类似case 1
+    //         case 2:
+    //             if (coin && !StatusSetUtils.isInOutputs(seq, src)) {
+    //                 log.info(String.format("[OUTPUT]: seq=%s, src=%s, est=true", seq, src));
+    //                 StatusSetUtils.addOutputs(seq, src, true);
+    //                 // 与case 1不同的部分，有一个BA共识output了1，那可能使output了1的BA共识总数超过N-f
+    //                 // 这时其他的BA共识如果还没有开始，那么设置est为0并强制开始（为了防止有f个恶意静默节点的情况）
+    //                 if (ConsensusStatus.outputs.get(seq).size() >= NetworkInfo.getN() - NetworkInfo.getF()) {
+    //                     for (byte i = 0; i < NetworkInfo.getN(); i++) {
+    //                         if (!ConsensusStatus.outputs.get(seq).contains(i)
+    //                                 && !StatusSetUtils.isSendBvals0(seq, i, (byte) 0)
+    //                                 && !StatusSetUtils.isSendBvals1(seq, i, (byte) 0)) {
+    //                             BvalMsg bvalMsg = new BvalMsg(seq, i, (byte) 0, false);
+    //                             MsgGC.afterSendBval0(bvalMsg);
+    //                             String json = gson.toJson(bvalMsg);
+    //                             RawMsg rawMsg = new RawMsg(MsgType.BVAL, json, null);
+    //                             SendUtils.publishToServer(rawMsg);
+    //                         }
+    //                     }
+    //                 }
+    //                 if (ConsensusStatus.outputs.get(seq).size() == NetworkInfo.getN()) {
+    //                     MsgGC.afterFinishSeq();
+    //                     xxxbft.protocol.MsgGC.afterFinishRound();
+    //                     if (XReqSet.getCurrReq() != null) {
+    //                         xxxbft.protocol.MsgProcessor.req(XReqSet.getCurrReq());
+    //                     }
+    //                 }
+    //             }
+    //             if(!StatusSetUtils.isSendBvals1(seq, src, (byte) (round + 1))) {
+    //                 BvalMsg bvalMsg = new BvalMsg(seq, src, (byte) (round + 1), true);
+    //                 MsgGC.afterSendBval1(bvalMsg);
+    //                 String json = gson.toJson(bvalMsg);
+    //                 RawMsg rawMsg = new RawMsg(MsgType.BVAL, json, null);
+    //                 SendUtils.publishToServer(rawMsg);
+    //             }
+    //             return;
+    //
+    //         // bin_values中0和1都有，那么继续下一轮BA共识，est设置为公共硬币的值
+    //         case 3:
+    //             if (!coin && !StatusSetUtils.isSendBvals0(seq, src, (byte) (round + 1))) {
+    //                 BvalMsg bvalMsg = new BvalMsg(seq, src, (byte) (round + 1), false);
+    //                 MsgGC.afterSendBval0(bvalMsg);
+    //                 String json = gson.toJson(bvalMsg);
+    //                 RawMsg rawMsg = new RawMsg(MsgType.BVAL, json, null);
+    //                 SendUtils.publishToServer(rawMsg);
+    //                 return;
+    //             }
+    //             if (coin && !StatusSetUtils.isSendBvals1(seq, src, (byte) (round + 1))) {
+    //                 BvalMsg bvalMsg = new BvalMsg(seq, src, (byte) (round + 1), true);
+    //                 MsgGC.afterSendBval1(bvalMsg);
+    //                 String json = gson.toJson(bvalMsg);
+    //                 RawMsg rawMsg = new RawMsg(MsgType.BVAL, json, null);
+    //                 SendUtils.publishToServer(rawMsg);
+    //                 return;
+    //             }
+    //
+    //         default:
+    //             return;
+    //
+    //     }
+    //
+    // }
 
 }

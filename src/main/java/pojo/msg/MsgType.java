@@ -33,7 +33,40 @@ public enum MsgType {
     /**
      * Honey Badger共识的AUX消息
      */
-    AUX;
+    AUX,
+    /**
+     * 论文共识的PREPARE消息
+     */
+    X_PREPARE,
+    /**
+     * 论文共识的PREPARE_VOTE消息
+     */
+    X_PREPARE_VOTE,
+    /**
+     * 论文共识的COMMIT消息
+     */
+    X_COMMIT,
+    /**
+     * 论文共识的BVAL消息，与Honey Badger中相同
+     */
+    X_BVAL,
+    /**
+     * 论文共识的AUX消息，与Honey Badger中相同
+     */
+    X_AUX,
+    /**
+     * PBFT共识的PRE_PREPARE消息
+     */
+    PRE_PREPARE,
+    /**
+     * PBFT共识的PREPARE消息
+     */
+    PREPARE,
+    /**
+     * PBFT共识的COMMIT消息
+     */
+    COMMIT;
+
 
     private static MsgType[] int2EnumMap = null;
 
